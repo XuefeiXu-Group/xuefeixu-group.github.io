@@ -1,6 +1,7 @@
 import { cp, copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { staticPaths } from "../site/src/siteRoutes.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = resolve(root, "dist");
@@ -9,6 +10,13 @@ const distAssets = resolve(dist, "assets");
 
 await copyFile(resolve(dist, "index.html"), resolve(dist, "404.html"));
 await writeFile(resolve(dist, ".nojekyll"), "");
+
+// GitHub Pages serves an index file for a directory on direct visits.
+await Promise.all([...staticPaths].map(async path => {
+  const directory = resolve(dist, `.${path}`);
+  await mkdir(directory, { recursive: true });
+  await copyFile(resolve(dist, "index.html"), resolve(directory, "index.html"));
+}));
 
 for (const file of await readdir(rootAssets)) {
   if (/^index-.*\.(css|js)$/.test(file)) {
